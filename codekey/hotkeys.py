@@ -73,9 +73,11 @@ class HotkeyRunner:
 
         self.logger.info(
             "READY. Clipboard: %s; screen: %s; type: %s; cancel: %s; stop: %s.",
-            self.solve_hotkey, self.screen_hotkey, self.type_hotkey, self.cancel_hotkey, self.stop_hotkey,
+            self.solve_hotkey, self.screen_hotkey if sys.platform == "darwin" else "unavailable",
+            self.type_hotkey, self.cancel_hotkey, self.stop_hotkey,
         )
-        self.logger.info("macOS may require Input Monitoring permission for the global hotkey.")
+        if sys.platform == "darwin":
+            self.logger.info("macOS may require Input Monitoring permission for the global hotkey.")
         if sys.platform == "darwin" and self.solve_hotkey == "<alt>+/":
             from Quartz import (
                 CGEventGetFlags,
@@ -128,11 +130,12 @@ class HotkeyRunner:
 
         hotkeys = {
             self.solve_hotkey: self.trigger,
-            self.screen_hotkey: lambda: self.trigger(self.screen_callback),
             self.type_hotkey: self.type_callback,
             self.cancel_hotkey: cancel,
             self.stop_hotkey: stop,
         }
+        if sys.platform == "darwin":
+            hotkeys[self.screen_hotkey] = lambda: self.trigger(self.screen_callback)
         with listener_type(hotkeys, **listener_options) as listener:
             listener.join()
         if not self._stop_requested.is_set():

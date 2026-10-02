@@ -29,3 +29,16 @@ def test_local_model_requires_gguf_file(tmp_path, monkeypatch):
     client = LocalModelClient(ModelConfig("llama_cpp", tmp_path / "missing.gguf", "llama-cli", 60, 32))
     with pytest.raises(ModelError, match="not found"):
         client.ensure_ready()
+
+
+def test_windows_model_finds_winget_link(tmp_path, monkeypatch):
+    from codekey import local_model
+
+    link = tmp_path / "Microsoft" / "WinGet" / "Links" / "llama-cli.exe"
+    link.parent.mkdir(parents=True)
+    link.write_bytes(b"runner")
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setattr(local_model.sys, "platform", "win32")
+    monkeypatch.setattr(local_model.shutil, "which", lambda name: None)
+    client = LocalModelClient(ModelConfig("llama_cpp", tmp_path / "model.gguf", "llama-cli", 60, 32))
+    assert client._command_prefix() == [str(link)]

@@ -12,6 +12,17 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+winget list --id ggml.llamacpp -e --accept-source-agreements 2>nul | findstr /i "ggml.llamacpp" >nul
+if errorlevel 1 (
+  where winget >nul 2>nul
+  if errorlevel 1 (
+    echo Install Windows Package Manager ^(App Installer^) or install llama.cpp manually.
+    pause
+    exit /b 1
+  )
+  winget install --id ggml.llamacpp -e --accept-source-agreements --accept-package-agreements
+  if errorlevel 1 goto failed
+)
 py -3 -m venv .venv
 if errorlevel 1 goto failed
 .venv\Scripts\python.exe -m pip install -r requirements.txt
@@ -20,7 +31,7 @@ if errorlevel 1 goto failed
 if errorlevel 1 goto failed
 .venv\Scripts\python.exe main.py --check
 if errorlevel 1 (
-  echo Install llama.cpp using: winget install llama.cpp
+  echo Install llama.cpp using: winget install --id ggml.llamacpp -e
   echo Then run this file again.
   pause
   exit /b 1
