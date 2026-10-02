@@ -1,0 +1,26 @@
+model:
+  provider: llama_cpp
+  path: models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf
+  binary: llama-cli
+  timeout: 300
+  max_tokens: 2048
+
+hotkey:
+  screen: "<ctrl>+<shift>+i"
+  solve: "<alt>+/"
+  type_answer: "<ctrl>+<shift>+t"
+  cancel: "<ctrl>+<shift>+x"
+  stop: "<ctrl>+<shift>+q"
+
+limits:
+  max_input_chars: 12000
+  max_output_chars: 30000
+
+generation:
+  temperature: 0.1
+  output_mode: code_only
+
+app:
+  typing_interval_seconds: 0.02
+  cooldown_seconds: 1.5
+  debug: false
