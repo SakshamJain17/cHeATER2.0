@@ -22,6 +22,11 @@ def test_mcq_true_false_and_general_questions():
     assert classify_question("What is recursion?").task_type is TaskType.GENERAL
 
 
+def test_true_false_with_a_b_options_is_mcq():
+    question = "Python is interpreted.\nA. True\nB. False"
+    assert classify_question(question).task_type is TaskType.MCQ
+
+
 def test_open_question_is_not_mcq_without_options():
     assert classify_question("Which of the following actors is best and why?").task_type is TaskType.GENERAL
 

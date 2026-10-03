@@ -43,6 +43,15 @@ def test_solver_returns_true_false_answer():
     assert result.code == "True"
 
 
+def test_solver_maps_true_false_options_to_written_letter():
+    client = FakeClient("False")
+    solver = Solver(client, GenerationConfig(0.1, "code_only"), 1000)
+    result = solver.solve("Python is compiled only.\nA. True\nB. False")
+    assert result.classification.task_type is TaskType.MCQ
+    assert result.code == "B"
+    assert result.choice_options == {"A": "True", "B": "False"}
+
+
 def test_explicit_cpp_request_produces_cpp():
     client = FakeClient("```cpp\n#include <iostream>\nint main() { std::cout << 1; }\n```")
     solver = Solver(client, GenerationConfig(0.1, "code_only"), 1000)

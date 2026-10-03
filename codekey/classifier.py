@@ -50,10 +50,10 @@ def classify_question(text: str) -> Classification:
     if not normalized:
         return Classification(TaskType.UNKNOWN)
 
-    if re.search(r"\b(?:true\s*(?:or|/)\s*false|true\s+false|t\s*/\s*f)\b", lowered):
-        task_type = TaskType.TRUE_FALSE
-    elif len(parse_choice_options(normalized)) >= 2:
+    if len(parse_choice_options(normalized)) >= 2:
         task_type = TaskType.MCQ
+    elif re.search(r"\b(?:true\s*(?:or|/)\s*false|true\s+false|t\s*/\s*f)\b", lowered):
+        task_type = TaskType.TRUE_FALSE
     elif re.search(r"\b(?:indexerror|traceback|exception|error|bug|not working|wrong output|fix this)\b", lowered):
         task_type = TaskType.DEBUG
     elif re.search(r"\b(?:explain|what does|how does)\b", lowered) and re.search(

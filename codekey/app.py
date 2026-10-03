@@ -12,7 +12,7 @@ from codekey.hotkeys import HotkeyRunner
 from codekey.inserter import type_into_focused_application
 from codekey.classifier import TaskType, classify_question, parse_choice_options
 from codekey.logger import configure_logging
-from codekey.mcq_cursor import move_to_mcq_answer
+from codekey.mcq_cursor import is_true_false_choice_pair, move_to_mcq_answer
 from codekey.local_model import LocalModelClient
 from codekey.solver import Solver
 from codekey.screen import read_clipboard_image_text, read_screen_text
@@ -155,7 +155,10 @@ class CodeKeyApp:
                 self.clipboard.write_text(result.code)
                 with self._digest_lock:
                     self._last_output_digest = hashlib.sha256(result.code.encode("utf-8")).hexdigest()
-                target = move_to_mcq_answer(result.code)
+                if is_true_false_choice_pair(getattr(result, "choice_options", None)):
+                    target = move_to_mcq_answer(result.code, horizontal=True)
+                else:
+                    target = move_to_mcq_answer(result.code)
                 self.logger.info("Moved the mouse to MCQ option %s at %s.", result.code, target)
             else:
                 self.logger.info("Typing the %s answer into the focused application.", result.classification.task_type.value)
