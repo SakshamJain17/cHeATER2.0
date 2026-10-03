@@ -96,6 +96,32 @@ def test_mcq_moves_cursor_on_prepare_hotkey(monkeypatch):
     assert moved == ["C"]
 
 
+def test_true_false_options_move_left_or_right(monkeypatch):
+    app = CodeKeyApp(load_config("config.yaml"), logging.getLogger("test-codekey"))
+    app.clipboard.read_text = lambda: "Python is compiled only.\nA. True\nB. False"
+
+    class Client:
+        def ensure_ready(self):
+            pass
+
+        def generate(self, system_prompt, prompt, temperature):
+            return "False"
+
+    app.solver.client = Client()
+    app.clipboard.write_text = lambda text: None
+    moved = []
+    done = threading.Event()
+
+    def move(answer, horizontal=False):
+        moved.append((answer, horizontal))
+        done.set()
+
+    monkeypatch.setattr("codekey.app.move_to_mcq_answer", move)
+    app.solve_clipboard()
+    assert done.wait(1)
+    assert moved == [("B", True)]
+
+
 def test_screen_capture_is_sent_to_solver(monkeypatch):
     app = CodeKeyApp(load_config("config.yaml"), logging.getLogger("test-codekey"))
     seen = []

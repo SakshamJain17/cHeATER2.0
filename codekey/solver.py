@@ -122,6 +122,7 @@ class SolveResult:
     code: str
     classification: Classification
     language: str
+    choice_options: dict[str, str] | None = None
 
 
 class Solver:
@@ -148,6 +149,7 @@ class Solver:
             f"User request:\n{model_question}"
         )
         raw = self.client.generate(SYSTEM_PROMPT, prompt, self.generation.temperature)
+        choice_options = None
         if len(raw) > self.max_output_chars:
             raise CodeKeyError("Generated output exceeds the configured size limit.")
         if programming and self.generation.output_mode == "code_only":
@@ -170,6 +172,7 @@ class Solver:
                     raise OutputValidationError("The model returned only an uncalled function or class.")
         elif classification.task_type is TaskType.MCQ:
             options = parse_choice_options(question)
+            choice_options = options
             try:
                 answer = _parse_mcq_answer(raw, options)
             except CodeKeyError:
@@ -201,4 +204,4 @@ class Solver:
                 if len(repaired) > self.max_output_chars:
                     raise CodeKeyError("Generated output exceeds the configured size limit.")
                 answer = _plain_text_answer(repaired, question)
-        return SolveResult(answer, classification, language)
+        return SolveResult(answer, classification, language, choice_options)

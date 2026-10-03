@@ -15,9 +15,24 @@ _POSITIONS = {
     "d": (0.50, 0.93),
 }
 
+_HORIZONTAL_POSITIONS = {
+    "A": (0.04, 0.50),
+    "B": (0.96, 0.50),
+    "a": (0.04, 0.50),
+    "b": (0.96, 0.50),
+}
 
-def move_to_mcq_answer(answer: str) -> tuple[int, int]:
-    if answer not in _POSITIONS:
+
+def is_true_false_choice_pair(options: dict[str, str] | None) -> bool:
+    if not options or set(options) != {"A", "B"}:
+        return False
+    values = {value.strip(" .:;()[]").casefold() for value in options.values()}
+    return values == {"true", "false"}
+
+
+def move_to_mcq_answer(answer: str, horizontal: bool = False) -> tuple[int, int]:
+    positions = _HORIZONTAL_POSITIONS if horizontal else _POSITIONS
+    if answer not in positions:
         raise CodeKeyError("Cannot move the cursor: MCQ answer must be A, B, C, or D.")
     try:
         from pynput.mouse import Controller
@@ -37,7 +52,7 @@ def move_to_mcq_answer(answer: str) -> tuple[int, int]:
             width, height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
         else:
             raise CodeKeyError("MCQ cursor movement requires macOS or Windows.")
-        x_fraction, y_fraction = _POSITIONS[answer]
+        x_fraction, y_fraction = positions[answer]
         x = left + width * x_fraction
         y = top + height * y_fraction
         target = (int(x), int(y))
