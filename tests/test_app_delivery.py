@@ -122,6 +122,30 @@ def test_true_false_options_move_left_or_right(monkeypatch):
     assert moved == [("B", True)]
 
 
+def test_unlabelled_true_false_moves_without_typing(monkeypatch):
+    app = CodeKeyApp(load_config("config.yaml"), logging.getLogger("test-codekey"))
+    app.clipboard.read_text = lambda: "True or false: Python supports functions?"
+    app.solver.solve = lambda question: SimpleNamespace(
+        code="True", classification=SimpleNamespace(task_type=TaskType.TRUE_FALSE)
+    )
+    copied = []
+    moved = []
+    done = threading.Event()
+    app.clipboard.write_text = copied.append
+    monkeypatch.setattr(
+        "codekey.app.move_to_true_false_answer",
+        lambda answer: moved.append(answer) or done.set() or (1, 2),
+    )
+    monkeypatch.setattr(
+        "codekey.app.type_into_focused_application",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("typed instead of moved")),
+    )
+    app.solve_clipboard()
+    assert done.wait(1)
+    assert copied == ["True"]
+    assert moved == ["True"]
+
+
 def test_screen_capture_is_sent_to_solver(monkeypatch):
     app = CodeKeyApp(load_config("config.yaml"), logging.getLogger("test-codekey"))
     seen = []
