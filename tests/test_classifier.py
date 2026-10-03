@@ -49,8 +49,28 @@ def test_unlabelled_options_are_assigned_letters_by_order():
 def test_unlabelled_bullets_preserve_option_order():
     from codekey.classifier import parse_choice_options
 
-    question = "Choose the correct color.\n○ Red\n○ Blue\n○ Green"
-    assert parse_choice_options(question) == {"A": "Red", "B": "Blue", "C": "Green"}
+    question = "Choose the correct color.\n○ Red\n○ Blue\n○ Green\n○ Yellow"
+    assert parse_choice_options(question) == {
+        "A": "Red", "B": "Blue", "C": "Green", "D": "Yellow",
+    }
+
+
+def test_incomplete_unlabelled_capture_does_not_shift_option_letters():
+    from codekey.classifier import parse_choice_options
+
+    question = "Which of the following removes a list item?\ndelete()\nclear()\npop()"
+    assert parse_choice_options(question) == {}
+    assert classify_question(question).task_type is TaskType.GENERAL
+
+
+def test_numbered_bold_unlabelled_question_keeps_fourth_option_as_d():
+    from codekey.classifier import parse_choice_options
+
+    question = (
+        "**10. Which of the following removes and returns the last element of a list by default?**\n"
+        "remove()\ndelete()\nclear()\npop()"
+    )
+    assert parse_choice_options(question)["D"] == "pop()"
 
 
 def test_open_question_is_not_mcq_without_options():
