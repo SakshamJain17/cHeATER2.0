@@ -35,13 +35,50 @@ _CHOICE_LINE = re.compile(
     re.IGNORECASE,
 )
 
+_UNLABELLED_CHOICE_CUE = re.compile(
+    r"\b(?:which\s+of\s+the\s+following|choose\s+(?:the|a|an|one)|"
+    r"select\s+(?:the|a|an|one)|pick\s+(?:the|a|an|one)|"
+    r"what\s+is\s+the\s+(?:correct|output|result|value))\b",
+    re.IGNORECASE,
+)
+
+
+def _strip_unlabelled_marker(line: str) -> str:
+    return re.sub(r"^[ \t]*(?:[-*•◦○◯◉●▪▫□☐]\s*)", "", line).strip()
+
+
+def _parse_unlabelled_choice_options(text: str) -> dict[str, str]:
+    lines = [line.strip() for line in normalize_choice_text(text).splitlines() if line.strip()]
+    if len(lines) < 3:
+        return {}
+    cue_index = next(
+        (index for index, line in enumerate(lines) if _UNLABELLED_CHOICE_CUE.search(line)),
+        None,
+    )
+    if cue_index is None:
+        if len(lines) >= 3 and {
+            _strip_unlabelled_marker(value).strip(" .:;()[]").casefold()
+            for value in lines[-2:]
+        } == {"true", "false"}:
+            candidates = lines[-2:]
+        else:
+            return {}
+    else:
+        candidates = lines[cue_index + 1:]
+    if not 2 <= len(candidates) <= 4:
+        return {}
+    cleaned = [_strip_unlabelled_marker(line) for line in candidates]
+    if any(not option for option in cleaned):
+        return {}
+    return dict(zip("ABCD", cleaned))
+
 
 def parse_choice_options(text: str) -> dict[str, str]:
     options = {}
     for parenthesized, punctuated, answer in _CHOICE_LINE.findall(normalize_choice_text(text)):
         label = (parenthesized or punctuated).upper()
         options[label] = answer.strip().rstrip("\\").strip()
-    return options
+    return options or _parse_unlabelled_choice_options(text)
 
 
 def classify_question(text: str) -> Classification:

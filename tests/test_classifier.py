@@ -27,6 +27,32 @@ def test_true_false_with_a_b_options_is_mcq():
     assert classify_question(question).task_type is TaskType.MCQ
 
 
+def test_unlabelled_options_are_assigned_letters_by_order():
+    from codekey.classifier import parse_choice_options
+
+    question = (
+        "Which of the following is a common way to print output in Python?\n"
+        "echo \"Hello\"\n"
+        "console.log(\"Hello\")\n"
+        "print(\"Hello\")\n"
+        "System.out.println(\"Hello\")"
+    )
+    assert classify_question(question).task_type is TaskType.MCQ
+    assert parse_choice_options(question) == {
+        "A": 'echo "Hello"',
+        "B": 'console.log("Hello")',
+        "C": 'print("Hello")',
+        "D": 'System.out.println("Hello")',
+    }
+
+
+def test_unlabelled_bullets_preserve_option_order():
+    from codekey.classifier import parse_choice_options
+
+    question = "Choose the correct color.\n○ Red\n○ Blue\n○ Green"
+    assert parse_choice_options(question) == {"A": "Red", "B": "Blue", "C": "Green"}
+
+
 def test_open_question_is_not_mcq_without_options():
     assert classify_question("Which of the following actors is best and why?").task_type is TaskType.GENERAL
 
