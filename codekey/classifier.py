@@ -75,6 +75,7 @@ def _parse_unlabelled_choice_options(text: str) -> dict[str, str]:
         (index for index, line in enumerate(lines) if _UNLABELLED_CHOICE_CUE.search(line)),
         None,
     )
+    candidates = None
     if cue_index is None:
         if len(lines) >= 3 and {
             _strip_unlabelled_marker(value).strip(" .:;()[]").casefold()
@@ -82,8 +83,22 @@ def _parse_unlabelled_choice_options(text: str) -> dict[str, str]:
         } == {"true", "false"}:
             candidates = lines[-2:]
         else:
-            return {}
-    else:
+            # Many LMS pages omit A-D labels. Treat exactly four rows after a
+            # question as ordered choices even when its wording is unfamiliar.
+            # This also handles the first option being copied after the question
+            # mark on the same line.
+            for index in range(len(lines) - 1, -1, -1):
+                if "?" not in lines[index]:
+                    continue
+                tail = lines[index + 1:]
+                first_option = _option_after_question(lines[index])
+                possible = ([first_option] if first_option else []) + tail
+                if len(possible) == 4:
+                    candidates = possible
+                    break
+            if candidates is None:
+                return {}
+    elif candidates is None:
         candidates = lines[cue_index + 1:]
         first_option = _option_after_question(lines[cue_index])
         if first_option:

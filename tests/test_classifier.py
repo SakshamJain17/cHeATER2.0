@@ -92,6 +92,37 @@ def test_first_unlabelled_option_on_question_line_keeps_order():
     }
 
 
+def test_unfamiliar_question_wording_uses_four_rows_as_ordered_options():
+    from codekey.classifier import parse_choice_options
+
+    question = (
+        "**14. What happens when two variables refer to the same mutable list and one variable modifies it?**\n"
+        "Only that variable changes\n"
+        "Both references see the modification\n"
+        "Python creates a copy automatically\n"
+        "An error occurs"
+    )
+    assert classify_question(question).task_type is TaskType.MCQ
+    assert parse_choice_options(question) == {
+        "A": "Only that variable changes",
+        "B": "Both references see the modification",
+        "C": "Python creates a copy automatically",
+        "D": "An error occurs",
+    }
+
+
+def test_unfamiliar_question_with_first_option_on_same_line_preserves_order():
+    from codekey.classifier import parse_choice_options
+
+    question = (
+        "What happens after this operation? First result\n"
+        "Second result\nThird result\nFourth result"
+    )
+    assert parse_choice_options(question) == {
+        "A": "First result", "B": "Second result", "C": "Third result", "D": "Fourth result",
+    }
+
+
 def test_radio_marker_after_question_is_first_option():
     from codekey.classifier import parse_choice_options
 

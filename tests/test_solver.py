@@ -86,6 +86,20 @@ def test_solver_handles_first_option_on_question_line():
     assert result.code == "D"
 
 
+def test_solver_understands_unlabelled_four_option_question_by_order():
+    client = FakeClient("Both references see the modification")
+    question = (
+        "**14. What happens when two variables refer to the same mutable list and one variable modifies it?**\n"
+        "Only that variable changes\n"
+        "Both references see the modification\n"
+        "Python creates a copy automatically\n"
+        "An error occurs"
+    )
+    result = Solver(client, GenerationConfig(0.1, "code_only"), 1000).solve(question)
+    assert result.classification.task_type is TaskType.MCQ
+    assert result.code == "B"
+
+
 def test_explicit_cpp_request_produces_cpp():
     client = FakeClient("```cpp\n#include <iostream>\nint main() { std::cout << 1; }\n```")
     solver = Solver(client, GenerationConfig(0.1, "code_only"), 1000)
