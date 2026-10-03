@@ -22,7 +22,7 @@ Install [Python 3.12 or newer](https://www.python.org/downloads/macos/) and llam
 
 If macOS blocks a downloaded `.command` file, open Terminal in the CodeKey folder and run `sh setup_mac.command` or `sh launch_mac.command`.
 
-Runtime errors are written to `codekey.log` in the project folder without an error dialog. The `.command` launcher itself opens Terminal; the locally installed `CodeKey Launcher.app` starts without a Terminal window.
+Runtime errors are written to `codekey.log` in the project folder without an error dialog. The `.command` launcher itself opens Terminal; the locally installed `CodeKey Launcher.app` starts as a background accessory without a Terminal window, Dock icon, or application-switcher entry.
 
 ## Use
 
