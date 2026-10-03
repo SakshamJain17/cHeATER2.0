@@ -35,6 +35,15 @@ def test_solver_returns_mcq_answer():
     assert result.code == "B"
 
 
+def test_solver_returns_all_multi_select_answers_in_order():
+    client = FakeClient("Options D and B")
+    solver = Solver(client, GenerationConfig(0.1, "code_only"), 1000)
+    result = solver.solve("Select all even numbers.\nA. 1\nB. 2\nC. 3\nD. 4")
+    assert result.classification.task_type is TaskType.MULTI_SELECT
+    assert result.code == "B,D"
+    assert result.choice_options == {"A": "1", "B": "2", "C": "3", "D": "4"}
+
+
 def test_solver_returns_true_false_answer():
     client = FakeClient("True")
     solver = Solver(client, GenerationConfig(0.1, "code_only"), 1000)

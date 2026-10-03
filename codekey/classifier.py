@@ -7,6 +7,7 @@ from enum import Enum
 class TaskType(str, Enum):
     CODING_PROBLEM = "CODING_PROBLEM"
     MCQ = "MCQ"
+    MULTI_SELECT = "MULTI_SELECT"
     TRUE_FALSE = "TRUE_FALSE"
     DEBUG = "DEBUG"
     EXPLAIN_CODE = "EXPLAIN_CODE"
@@ -40,6 +41,14 @@ _UNLABELLED_CHOICE_CUE = re.compile(
     r"choose\s+(?:the|a|an|one)|"
     r"select\s+(?:the|a|an|one)|pick\s+(?:the|a|an|one)|"
     r"what\s+is\s+the\s+(?:correct|output|result|value))\b",
+    re.IGNORECASE,
+)
+
+_MULTI_SELECT_CUE = re.compile(
+    r"\b(?:select|choose|pick|mark|check)\s+(?:all|every|two|three|\d+)\b|"
+    r"\b(?:select|choose|pick|mark|check)\s+(?:all\s+)?(?:answers|choices|options|statements)\s+that\s+apply\b|"
+    r"\b(?:more\s+than\s+one|multiple)\s+(?:answers?|choices?|options?|statements?)\b|"
+    r"\b(?:two|three|\d+)\s+(?:answers?|choices?|options?|statements?)\s+(?:are|is)\s+correct\b",
     re.IGNORECASE,
 )
 
@@ -105,7 +114,7 @@ def classify_question(text: str) -> Classification:
         return Classification(TaskType.UNKNOWN)
 
     if len(parse_choice_options(normalized)) >= 2:
-        task_type = TaskType.MCQ
+        task_type = TaskType.MULTI_SELECT if _MULTI_SELECT_CUE.search(normalized) else TaskType.MCQ
     elif re.search(r"\b(?:true\s*(?:or|/)\s*false|true\s+false|t\s*/\s*f)\b", lowered):
         task_type = TaskType.TRUE_FALSE
     elif re.search(r"\b(?:indexerror|traceback|exception|error|bug|not working|wrong output|fix this)\b", lowered):

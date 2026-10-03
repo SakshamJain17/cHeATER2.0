@@ -22,6 +22,13 @@ def test_mcq_true_false_and_general_questions():
     assert classify_question("What is recursion?").task_type is TaskType.GENERAL
 
 
+def test_multiple_selection_is_distinct_from_single_choice():
+    question = "Select all answers that are even.\nA. 1\nB. 2\nC. 3\nD. 4"
+    assert classify_question(question).task_type is TaskType.MULTI_SELECT
+    question = "Choose two correct options.\nA. 1\nB. 2\nC. 3\nD. 4"
+    assert classify_question(question).task_type is TaskType.MULTI_SELECT
+
+
 def test_true_false_with_a_b_options_is_mcq():
     question = "Python is interpreted.\nA. True\nB. False"
     assert classify_question(question).task_type is TaskType.MCQ

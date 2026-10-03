@@ -14,6 +14,7 @@ For programming tasks, use the language requested by the user. If none is reques
 For basic or intermediate Python program questions, write a complete runnable script using straightforward statements, input(), loops, and print() as needed. Do not wrap the whole answer in def or class unless the question asks for a function or class. If you use a function for a program, call it from top-level code.
 For programming tasks in code-only mode, return only the requested code, without Markdown fences or commentary.
 For multiple choice questions, return only one option label (A, B, C, or D).
+For questions that allow multiple correct choices, return every correct option label in alphabetical order, separated by commas.
 For true/false questions, return only True or False.
 For non-programming questions, answer in plain natural language, never as print(...) or code. If a word, name, number, or short phrase fully answers the question, output only that value on one line. Otherwise use the shortest sufficient answer, unless the user explicitly asks for detail. Use the user's language.
 Do not invent facts or claim certainty when the question is subjective or ambiguous."""
@@ -117,6 +118,26 @@ def _parse_mcq_answer(raw: str, options: dict[str, str]) -> str:
     raise CodeKeyError("The model did not identify one MCQ option clearly.")
 
 
+def _parse_multi_select_answer(raw: str, options: dict[str, str]) -> str:
+    answer = raw.strip().strip("`* ").strip()
+    stripped = re.sub(
+        r"^(?:the\s+)?(?:correct\s+)?(?:answers?|options?|choices?)\s*(?:are|is|:|=|-)*\s*",
+        "",
+        answer,
+        flags=re.IGNORECASE,
+    ).strip().rstrip(".")
+    stripped = re.sub(r"\b(?:and|or)\b", ",", stripped, flags=re.IGNORECASE)
+    if not re.fullmatch(r"[()A-Da-d,;&/+\s]+", stripped):
+        raise CodeKeyError("The model did not identify multiple choices clearly.")
+    labels = {label.upper() for label in re.findall(r"(?<![A-Za-z])([A-Da-d])(?![A-Za-z])", stripped)}
+    if not labels:
+        compact = re.sub(r"[^A-Da-d]", "", stripped).upper()
+        labels = set(compact) if compact and len(compact) <= len(options) else set()
+    if not labels or not labels.issubset(options):
+        raise CodeKeyError("The model did not identify multiple choices clearly.")
+    return ",".join(sorted(labels))
+
+
 @dataclass(frozen=True)
 class SolveResult:
     code: str
@@ -140,7 +161,9 @@ class Solver:
         }
         language = requested_language(question) if programming else ""
         self.client.ensure_ready()
-        model_question = normalize_choice_text(question) if classification.task_type is TaskType.MCQ else question.strip()
+        model_question = normalize_choice_text(question) if classification.task_type in {
+            TaskType.MCQ, TaskType.MULTI_SELECT,
+        } else question.strip()
         prompt = (
             f"Task type: {classification.task_type.value}\n"
             f"Programming language: {language or 'not applicable'}\n"
@@ -186,6 +209,22 @@ class Solver:
                 if len(retried) > self.max_output_chars:
                     raise CodeKeyError("Generated output exceeds the configured size limit.")
                 answer = _parse_mcq_answer(retried, options)
+        elif classification.task_type is TaskType.MULTI_SELECT:
+            options = parse_choice_options(question)
+            choice_options = options
+            try:
+                answer = _parse_multi_select_answer(raw, options)
+            except CodeKeyError:
+                choices = "\n".join(f"{label}. {options[label]}" for label in sorted(options))
+                retry_prompt = (
+                    "Select every correct choice. Reply with only the written option letters in alphabetical "
+                    "order, separated by commas, such as A,C.\n\n"
+                    f"Question:\n{model_question}\n\nChoices:\n{choices}"
+                )
+                retried = self.client.generate(SYSTEM_PROMPT, retry_prompt, self.generation.temperature)
+                if len(retried) > self.max_output_chars:
+                    raise CodeKeyError("Generated output exceeds the configured size limit.")
+                answer = _parse_multi_select_answer(retried, options)
         elif classification.task_type is TaskType.TRUE_FALSE:
             answer = raw.strip().rstrip(".").lower()
             if answer not in {"true", "false"}:
