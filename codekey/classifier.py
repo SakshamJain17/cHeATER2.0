@@ -65,10 +65,13 @@ def _parse_unlabelled_choice_options(text: str) -> dict[str, str]:
             return {}
     else:
         candidates = lines[cue_index + 1:]
-    if not 2 <= len(candidates) <= 4:
-        return {}
     cleaned = [_strip_unlabelled_marker(line) for line in candidates]
     if any(not option for option in cleaned):
+        return {}
+    normalized_values = {option.strip(" .:;()[]").casefold() for option in cleaned}
+    # Ordered exam questions use four choices. Requiring all four prevents a
+    # missed OCR row from shifting the remaining choices to the wrong letter.
+    if len(cleaned) != 4 and not (len(cleaned) == 2 and normalized_values == {"true", "false"}):
         return {}
     return dict(zip("ABCD", cleaned))
 
