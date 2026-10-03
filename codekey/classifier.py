@@ -36,7 +36,8 @@ _CHOICE_LINE = re.compile(
 )
 
 _UNLABELLED_CHOICE_CUE = re.compile(
-    r"\b(?:which\s+of\s+the\s+following|choose\s+(?:the|a|an|one)|"
+    r"\b(?:which\s+of\s+the\s+following|which\s+(?:option|answer|choice)\s+is|"
+    r"choose\s+(?:the|a|an|one)|"
     r"select\s+(?:the|a|an|one)|pick\s+(?:the|a|an|one)|"
     r"what\s+is\s+the\s+(?:correct|output|result|value))\b",
     re.IGNORECASE,
@@ -45,6 +46,16 @@ _UNLABELLED_CHOICE_CUE = re.compile(
 
 def _strip_unlabelled_marker(line: str) -> str:
     return re.sub(r"^[ \t]*(?:[-*•◦○◯◉●▪▫□☐]\s*)", "", line).strip()
+
+
+def _option_after_question(line: str) -> str:
+    """Return an option OCR/copying placed after the question on one line."""
+    if "?" not in line:
+        return ""
+    suffix = line.rsplit("?", 1)[1].strip()
+    # A Markdown question often closes bold text immediately after the `?`.
+    suffix = re.sub(r"^(?:\*\*|__)[ \t]*", "", suffix).strip()
+    return _strip_unlabelled_marker(suffix)
 
 
 def _parse_unlabelled_choice_options(text: str) -> dict[str, str]:
@@ -65,6 +76,9 @@ def _parse_unlabelled_choice_options(text: str) -> dict[str, str]:
             return {}
     else:
         candidates = lines[cue_index + 1:]
+        first_option = _option_after_question(lines[cue_index])
+        if first_option:
+            candidates.insert(0, first_option)
     cleaned = [_strip_unlabelled_marker(line) for line in candidates]
     if any(not option for option in cleaned):
         return {}

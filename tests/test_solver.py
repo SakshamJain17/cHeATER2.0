@@ -66,6 +66,17 @@ def test_solver_maps_unlabelled_option_text_to_ordered_letter():
     assert result.code == "C"
 
 
+def test_solver_handles_first_option_on_question_line():
+    client = FakeClient("pop()")
+    question = (
+        "Which of the following removes the last list element? remove()\n"
+        "delete()\nclear()\npop()"
+    )
+    result = Solver(client, GenerationConfig(0.1, "code_only"), 1000).solve(question)
+    assert result.classification.task_type is TaskType.MCQ
+    assert result.code == "D"
+
+
 def test_explicit_cpp_request_produces_cpp():
     client = FakeClient("```cpp\n#include <iostream>\nint main() { std::cout << 1; }\n```")
     solver = Solver(client, GenerationConfig(0.1, "code_only"), 1000)
