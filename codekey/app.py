@@ -12,7 +12,11 @@ from codekey.hotkeys import HotkeyRunner
 from codekey.inserter import type_into_focused_application
 from codekey.classifier import TaskType, classify_question, parse_choice_options
 from codekey.logger import configure_logging
-from codekey.mcq_cursor import is_true_false_choice_pair, move_to_mcq_answer
+from codekey.mcq_cursor import (
+    is_true_false_choice_pair,
+    move_to_mcq_answer,
+    move_to_true_false_answer,
+)
 from codekey.local_model import LocalModelClient
 from codekey.solver import Solver
 from codekey.screen import read_clipboard_image_text, read_screen_text
@@ -93,7 +97,9 @@ class CodeKeyApp:
                 if self.cancel_event.is_set():
                     self.logger.info("Answer canceled before typing started.")
                     return
-                if self._start_when_ready or result.classification.task_type is TaskType.MCQ:
+                if self._start_when_ready or result.classification.task_type in {
+                    TaskType.MCQ, TaskType.TRUE_FALSE,
+                }:
                     self._typing = True
                     start_typing = True
                 else:
@@ -160,6 +166,12 @@ class CodeKeyApp:
                 else:
                     target = move_to_mcq_answer(result.code)
                 self.logger.info("Moved the mouse to MCQ option %s at %s.", result.code, target)
+            elif result.classification.task_type is TaskType.TRUE_FALSE:
+                self.clipboard.write_text(result.code)
+                with self._digest_lock:
+                    self._last_output_digest = hashlib.sha256(result.code.encode("utf-8")).hexdigest()
+                target = move_to_true_false_answer(result.code)
+                self.logger.info("Moved the mouse to %s at %s.", result.code, target)
             else:
                 self.logger.info("Typing the %s answer into the focused application.", result.classification.task_type.value)
                 completed = type_into_focused_application(

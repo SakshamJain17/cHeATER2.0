@@ -26,7 +26,7 @@ def test_mcq_cursor_targets_screen_edges(monkeypatch):
     assert positions == [(500, 56), (960, 400), (40, 400), (500, 744)]
 
 
-def test_true_false_a_b_targets_left_and_right(monkeypatch):
+def test_true_false_a_b_uses_configured_pair_positions(monkeypatch):
     positions = []
 
     class Mouse:
@@ -48,4 +48,21 @@ def test_true_false_a_b_targets_left_and_right(monkeypatch):
     )
     mcq_cursor.move_to_mcq_answer("A", horizontal=True)
     mcq_cursor.move_to_mcq_answer("B", horizontal=True)
-    assert positions == [(40, 400), (960, 400)]
+    assert positions == [
+        (int(1000 * mcq_cursor._HORIZONTAL_POSITIONS["A"][0]),
+         int(800 * mcq_cursor._HORIZONTAL_POSITIONS["A"][1])),
+        (int(1000 * mcq_cursor._HORIZONTAL_POSITIONS["B"][0]),
+         int(800 * mcq_cursor._HORIZONTAL_POSITIONS["B"][1])),
+    ]
+
+
+def test_unlabelled_true_false_targets_left_and_right(monkeypatch):
+    moved = []
+    monkeypatch.setattr(
+        mcq_cursor,
+        "move_to_mcq_answer",
+        lambda answer, horizontal=False: moved.append((answer, horizontal)) or (1, 2),
+    )
+    assert mcq_cursor.move_to_true_false_answer("True") == (1, 2)
+    assert mcq_cursor.move_to_true_false_answer("false") == (1, 2)
+    assert moved == [("A", True), ("B", True)]

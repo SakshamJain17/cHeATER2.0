@@ -16,10 +16,12 @@ _POSITIONS = {
 }
 
 _HORIZONTAL_POSITIONS = {
-    "A": (0.04, 0.50),
-    "B": (0.96, 0.50),
-    "a": (0.04, 0.50),
-    "b": (0.96, 0.50),
+    "A": (0.50, 0.07),
+    "B": (0.50, 0.93),
+    "a": (0.50, 0.07),
+    "b": (0.50, 0.93),
+    "true": (0.50, 0.07),
+    "false": (0.50, 0.93),
 }
 
 
@@ -28,6 +30,14 @@ def is_true_false_choice_pair(options: dict[str, str] | None) -> bool:
         return False
     values = {value.strip(" .:;()[]").casefold() for value in options.values()}
     return values == {"true", "false"}
+
+
+def move_to_true_false_answer(answer: str) -> tuple[int, int]:
+    labels = {"true": "A", "false": "B"}
+    label = labels.get(answer.strip().casefold())
+    if label is None:
+        raise CodeKeyError("Cannot move the cursor: answer must be True or False.")
+    return move_to_mcq_answer(label, horizontal=True)
 
 
 def move_to_mcq_answer(answer: str, horizontal: bool = False) -> tuple[int, int]:
