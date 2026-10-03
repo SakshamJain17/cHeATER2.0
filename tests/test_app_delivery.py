@@ -96,6 +96,26 @@ def test_mcq_moves_cursor_on_prepare_hotkey(monkeypatch):
     assert moved == ["C"]
 
 
+def test_multi_select_copies_letters_and_moves_through_each_answer(monkeypatch):
+    app = CodeKeyApp(load_config("config.yaml"), logging.getLogger("test-codekey"))
+    app.clipboard.read_text = lambda: "Select all even numbers.\nA. 1\nB. 2\nC. 3\nD. 4"
+    app.solver.solve = lambda question: SimpleNamespace(
+        code="B,D", classification=SimpleNamespace(task_type=TaskType.MULTI_SELECT)
+    )
+    copied = []
+    moved = []
+    done = threading.Event()
+    app.clipboard.write_text = copied.append
+    monkeypatch.setattr(
+        "codekey.app.move_to_mcq_answers",
+        lambda answers: moved.append(answers) or done.set() or [(1, 2), (3, 4)],
+    )
+    app.solve_clipboard()
+    assert done.wait(1)
+    assert copied == ["B,D"]
+    assert moved == ["B,D"]
+
+
 def test_true_false_options_move_left_or_right(monkeypatch):
     app = CodeKeyApp(load_config("config.yaml"), logging.getLogger("test-codekey"))
     app.clipboard.read_text = lambda: "Python is compiled only.\nA. True\nB. False"

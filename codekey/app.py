@@ -15,6 +15,7 @@ from codekey.logger import configure_logging
 from codekey.mcq_cursor import (
     is_true_false_choice_pair,
     move_to_mcq_answer,
+    move_to_mcq_answers,
     move_to_true_false_answer,
 )
 from codekey.local_model import LocalModelClient
@@ -98,7 +99,7 @@ class CodeKeyApp:
                     self.logger.info("Answer canceled before typing started.")
                     return
                 if self._start_when_ready or result.classification.task_type in {
-                    TaskType.MCQ, TaskType.TRUE_FALSE,
+                    TaskType.MCQ, TaskType.MULTI_SELECT, TaskType.TRUE_FALSE,
                 }:
                     self._typing = True
                     start_typing = True
@@ -166,6 +167,12 @@ class CodeKeyApp:
                 else:
                     target = move_to_mcq_answer(result.code)
                 self.logger.info("Moved the mouse to MCQ option %s at %s.", result.code, target)
+            elif result.classification.task_type is TaskType.MULTI_SELECT:
+                self.clipboard.write_text(result.code)
+                with self._digest_lock:
+                    self._last_output_digest = hashlib.sha256(result.code.encode("utf-8")).hexdigest()
+                targets = move_to_mcq_answers(result.code)
+                self.logger.info("Moved the mouse through multiple-choice options %s at %s.", result.code, targets)
             elif result.classification.task_type is TaskType.TRUE_FALSE:
                 self.clipboard.write_text(result.code)
                 with self._digest_lock:

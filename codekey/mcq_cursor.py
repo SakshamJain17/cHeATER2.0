@@ -1,4 +1,5 @@
 import sys
+import time
 
 from codekey.exceptions import CodeKeyError
 
@@ -83,3 +84,16 @@ def move_to_mcq_answer(answer: str, horizontal: bool = False) -> tuple[int, int]
         raise CodeKeyError(
             "Could not move the mouse. Check system input permissions."
         ) from error
+
+
+def move_to_mcq_answers(answers: str, pause_seconds: float = 0.7) -> list[tuple[int, int]]:
+    """Show multiple selected letters as a visible sequence of cursor movements."""
+    labels = [label.strip().upper() for label in answers.split(",") if label.strip()]
+    if not labels or any(label not in "ABCD" for label in labels):
+        raise CodeKeyError("Cannot move the cursor: selections must contain A, B, C, or D.")
+    targets = []
+    for index, label in enumerate(labels):
+        targets.append(move_to_mcq_answer(label))
+        if index + 1 < len(labels):
+            time.sleep(pause_seconds)
+    return targets
