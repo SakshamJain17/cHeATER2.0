@@ -23,6 +23,21 @@ from codekey.solver import Solver
 from codekey.screen import read_clipboard_image_text, read_screen_text
 
 
+def _hide_macos_process_from_dock() -> None:
+    """Keep the Python helper out of the Dock and application switcher."""
+    if sys.platform != "darwin":
+        return
+    try:
+        from AppKit import NSApplication, NSApplicationActivationPolicyProhibited
+
+        NSApplication.sharedApplication().setActivationPolicy_(
+            NSApplicationActivationPolicyProhibited
+        )
+    except Exception:
+        # Hiding is cosmetic and must never prevent the hotkey service starting.
+        pass
+
+
 class CodeKeyApp:
     def __init__(self, config: Config, logger: logging.Logger, cancel_event: threading.Event | None = None):
         self.config = config
@@ -232,6 +247,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.screen_ocr:
             print(read_screen_text(config.limits.max_input_chars, diagnostics=True))
             return 0
+        _hide_macos_process_from_dock()
         _check_model(config, logger)
         cancel_event = threading.Event()
         app = CodeKeyApp(config, logger, cancel_event)
