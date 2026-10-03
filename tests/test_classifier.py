@@ -73,6 +73,27 @@ def test_numbered_bold_unlabelled_question_keeps_fourth_option_as_d():
     assert parse_choice_options(question)["D"] == "pop()"
 
 
+def test_first_unlabelled_option_on_question_line_keeps_order():
+    from codekey.classifier import parse_choice_options
+
+    question = (
+        "**10. Which of the following removes and returns the last element by default?** remove()\n"
+        "delete()\nclear()\npop()"
+    )
+    assert parse_choice_options(question) == {
+        "A": "remove()", "B": "delete()", "C": "clear()", "D": "pop()",
+    }
+
+
+def test_radio_marker_after_question_is_first_option():
+    from codekey.classifier import parse_choice_options
+
+    question = "Which option is correct? ○ First\n○ Second\n○ Third\n○ Fourth"
+    assert parse_choice_options(question) == {
+        "A": "First", "B": "Second", "C": "Third", "D": "Fourth",
+    }
+
+
 def test_open_question_is_not_mcq_without_options():
     assert classify_question("Which of the following actors is best and why?").task_type is TaskType.GENERAL
 
