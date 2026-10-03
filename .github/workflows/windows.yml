@@ -21,9 +21,12 @@ jobs:
         shell: pwsh
         run: |
           Remove-Item codekey.log -ErrorAction SilentlyContinue
+          $PSNativeCommandUseErrorActionPreference = $false
           $output = & cscript.exe //nologo launch_windows.vbs 2>&1
+          $exitCode = $LASTEXITCODE
           if ($output) { throw "Hidden launcher wrote to the console: $output" }
-          if ($LASTEXITCODE -ne 1) { throw "Expected missing-setup exit code 1, got $LASTEXITCODE" }
+          if ($exitCode -ne 1) { throw "Expected missing-setup exit code 1, got $exitCode" }
           if (-not (Select-String -Path codekey.log -Pattern 'CodeKey setup is missing' -Quiet)) {
             throw 'Hidden launcher did not record the missing setup error.'
           }
+          exit 0
