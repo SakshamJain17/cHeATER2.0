@@ -54,6 +54,8 @@ class HotkeyRunner:
     def _run(self, callback) -> None:
         try:
             callback()
+        except Exception:
+            self.logger.exception("Hotkey action failed.")
         finally:
             self._worker_lock.release()
 

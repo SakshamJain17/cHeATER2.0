@@ -17,3 +17,11 @@ jobs:
         run: python -m pip install -r requirements.txt pytest
       - name: Run tests
         run: python -m pytest -q
+      - name: Check hidden launcher error path
+        shell: pwsh
+        run: |
+          $output = & cscript.exe //nologo launch_windows.vbs 2>&1
+          if ($output) { throw "Hidden launcher wrote to the console: $output" }
+          if (-not (Select-String -Path codekey.log -Pattern 'CodeKey setup is missing' -Quiet)) {
+            throw 'Hidden launcher did not record the missing setup error.'
+          }

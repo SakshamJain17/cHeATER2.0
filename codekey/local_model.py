@@ -56,6 +56,7 @@ class LocalModelClient:
             "--no-display-prompt", "--no-show-timings", "--color", "off",
         ]
         try:
+            options = {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
             result = subprocess.run(
                 command,
                 capture_output=True,
@@ -64,6 +65,7 @@ class LocalModelClient:
                 errors="replace",
                 timeout=self.config.timeout,
                 check=False,
+                **options,
             )
         except subprocess.TimeoutExpired as error:
             raise ModelError("The local model timed out. Try a smaller GGUF model.") from error

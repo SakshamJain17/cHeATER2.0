@@ -198,6 +198,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--screen-ocr", action="store_true", help="Print OCR text and candidates from the main screen for troubleshooting")
     args = parser.parse_args(argv)
 
+    logger = configure_logging()
     try:
         config = load_config(args.config)
         logger = configure_logging(config.app.debug)
