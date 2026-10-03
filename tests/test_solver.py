@@ -52,6 +52,20 @@ def test_solver_maps_true_false_options_to_written_letter():
     assert result.choice_options == {"A": "True", "B": "False"}
 
 
+def test_solver_maps_unlabelled_option_text_to_ordered_letter():
+    client = FakeClient('print("Hello")')
+    question = (
+        "Which of the following is a common way to print output in Python?\n"
+        "echo \"Hello\"\n"
+        "console.log(\"Hello\")\n"
+        "print(\"Hello\")\n"
+        "System.out.println(\"Hello\")"
+    )
+    result = Solver(client, GenerationConfig(0.1, "code_only"), 1000).solve(question)
+    assert result.classification.task_type is TaskType.MCQ
+    assert result.code == "C"
+
+
 def test_explicit_cpp_request_produces_cpp():
     client = FakeClient("```cpp\n#include <iostream>\nint main() { std::cout << 1; }\n```")
     solver = Solver(client, GenerationConfig(0.1, "code_only"), 1000)

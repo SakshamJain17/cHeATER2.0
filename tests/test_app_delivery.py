@@ -146,6 +146,38 @@ def test_unlabelled_true_false_moves_without_typing(monkeypatch):
     assert moved == ["True"]
 
 
+def test_unlabelled_options_move_by_order(monkeypatch):
+    app = CodeKeyApp(load_config("config.yaml"), logging.getLogger("test-codekey"))
+    app.clipboard.read_text = lambda: (
+        "Which of the following is a common way to print output in Python?\n"
+        "echo \"Hello\"\n"
+        "console.log(\"Hello\")\n"
+        "print(\"Hello\")\n"
+        "System.out.println(\"Hello\")"
+    )
+
+    class Client:
+        def ensure_ready(self):
+            pass
+
+        def generate(self, system_prompt, prompt, temperature):
+            return 'print("Hello")'
+
+    app.solver.client = Client()
+    copied = []
+    moved = []
+    done = threading.Event()
+    app.clipboard.write_text = copied.append
+    monkeypatch.setattr(
+        "codekey.app.move_to_mcq_answer",
+        lambda answer: moved.append(answer) or done.set() or (1, 2),
+    )
+    app.solve_clipboard()
+    assert done.wait(1)
+    assert copied == ["C"]
+    assert moved == ["C"]
+
+
 def test_screen_capture_is_sent_to_solver(monkeypatch):
     app = CodeKeyApp(load_config("config.yaml"), logging.getLogger("test-codekey"))
     seen = []
