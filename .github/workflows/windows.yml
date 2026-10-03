@@ -29,4 +29,12 @@ jobs:
           if (-not (Select-String -Path codekey.log -Pattern 'CodeKey setup is missing' -Quiet)) {
             throw 'Hidden launcher did not record the missing setup error.'
           }
+          Remove-Item codekey.log
+          $batchOutput = & cmd.exe /d /c launch_windows.bat 2>&1
+          $batchExitCode = $LASTEXITCODE
+          if ($batchOutput) { throw "Batch fallback wrote to the console: $batchOutput" }
+          if ($batchExitCode -ne 1) { throw "Expected batch missing-setup exit code 1, got $batchExitCode" }
+          if (-not (Select-String -Path codekey.log -Pattern 'CodeKey setup is missing' -Quiet)) {
+            throw 'Batch fallback did not record the missing setup error.'
+          }
           exit 0

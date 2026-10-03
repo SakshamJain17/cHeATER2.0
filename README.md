@@ -9,7 +9,7 @@ The default model is [Qwen2.5-Coder-1.5B-Instruct GGUF](https://huggingface.co/Q
 1. Install [Python 3.12 or newer](https://www.python.org/downloads/windows/) and enable the Python launcher.
 2. Make sure [Windows Package Manager](https://learn.microsoft.com/en-us/windows/package-manager/winget/) is available (`winget --version` in Command Prompt). You can also install [llama.cpp](https://github.com/ggml-org/llama.cpp/releases) manually and set `model.binary` in `config.yaml` to its `llama-cli.exe` path.
 3. Double-click `setup_windows.bat` in the CodeKey folder. It installs llama.cpp through winget when needed, installs Python dependencies, downloads and verifies the model, then checks the runner. If llama.cpp was just installed but the check cannot find it, reopen Command Prompt and run `setup_windows.bat` again.
-4. Double-click `launch_windows.vbs` whenever you want CodeKey running without a console window. `launch_windows.bat` also starts the hidden launcher but may briefly flash a Command Prompt window.
+4. Double-click `launch_windows.vbs` whenever you want CodeKey running without a console window. If Windows security blocks VBS scripts, use `launch_windows.bat`; it may briefly flash a Command Prompt window but starts the same hidden Python process.
 
 If the computer cannot download the model, copy `models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf` from a computer where setup completed. The Windows computer still needs Python dependencies and llama.cpp installed. Setup requires network access once for downloads; normal question answering does not use a network connection. On Windows, CodeKey supports copied **text** questions; image and screen OCR are outside its Windows workflow.
 
