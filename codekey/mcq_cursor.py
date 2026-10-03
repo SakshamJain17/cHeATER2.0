@@ -41,7 +41,11 @@ def move_to_true_false_answer(answer: str) -> tuple[int, int]:
     return move_to_mcq_answer(label, horizontal=True)
 
 
-def move_to_mcq_answer(answer: str, horizontal: bool = False) -> tuple[int, int]:
+def move_to_mcq_answer(
+    answer: str,
+    horizontal: bool = False,
+    duration_seconds: float = 0.0,
+) -> tuple[int, int]:
     positions = _HORIZONTAL_POSITIONS if horizontal else _POSITIONS
     if answer not in positions:
         raise CodeKeyError("Cannot move the cursor: MCQ answer must be A, B, C, or D.")
@@ -68,7 +72,20 @@ def move_to_mcq_answer(answer: str, horizontal: bool = False) -> tuple[int, int]
         y = top + height * y_fraction
         target = (int(x), int(y))
         mouse = Controller()
-        mouse.position = target
+        if duration_seconds > 0:
+            start_x, start_y = mouse.position
+            steps = max(2, int(duration_seconds / 0.012))
+            for step in range(1, steps + 1):
+                progress = step / steps
+                # Smoothstep eases in and out instead of changing speed abruptly.
+                eased = progress * progress * (3 - 2 * progress)
+                mouse.position = (
+                    int(start_x + (target[0] - start_x) * eased),
+                    int(start_y + (target[1] - start_y) * eased),
+                )
+                time.sleep(duration_seconds / steps)
+        else:
+            mouse.position = target
         actual = mouse.position
         if abs(actual[0] - target[0]) > 10 or abs(actual[1] - target[1]) > 10:
             if sys.platform == "darwin":
@@ -86,14 +103,18 @@ def move_to_mcq_answer(answer: str, horizontal: bool = False) -> tuple[int, int]
         ) from error
 
 
-def move_to_mcq_answers(answers: str, pause_seconds: float = 0.7) -> list[tuple[int, int]]:
-    """Show multiple selected letters as a visible sequence of cursor movements."""
+def move_to_mcq_answers(
+    answers: str,
+    pause_seconds: float = 0.3,
+    travel_seconds: float = 0.45,
+) -> list[tuple[int, int]]:
+    """Show selected letters with smooth, ordered cursor movements."""
     labels = [label.strip().upper() for label in answers.split(",") if label.strip()]
     if not labels or any(label not in "ABCD" for label in labels):
         raise CodeKeyError("Cannot move the cursor: selections must contain A, B, C, or D.")
     targets = []
     for index, label in enumerate(labels):
-        targets.append(move_to_mcq_answer(label))
+        targets.append(move_to_mcq_answer(label, duration_seconds=travel_seconds))
         if index + 1 < len(labels):
             time.sleep(pause_seconds)
     return targets
