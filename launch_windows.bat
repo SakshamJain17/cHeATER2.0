@@ -1,9 +1,8 @@
 @echo off
 cd /d "%~dp0"
-if not exist ".venv\Scripts\python.exe" (
-  echo Run setup_windows.bat first.
-  pause
+if not exist ".venv\Scripts\pythonw.exe" (
+  echo CodeKey setup is missing. Run setup_windows.bat first.>>codekey.log
   exit /b 1
 )
-.venv\Scripts\python.exe main.py
-if errorlevel 1 pause
+start "" /b ".venv\Scripts\pythonw.exe" "launch.pyw"
+exit /b 0

@@ -1,9 +1,11 @@
 import pytest
+import sys
 
 from codekey import screen
 from codekey.exceptions import CodeKeyError
 
 
+@pytest.mark.skipif(sys.platform != "darwin", reason="macOS screen capture permission")
 def test_screen_capture_reports_missing_permission(monkeypatch):
     import Quartz
     requested = []

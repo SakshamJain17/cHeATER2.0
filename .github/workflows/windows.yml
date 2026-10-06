@@ -1,0 +1,40 @@
+name: Windows tests
+
+on:
+  push:
+    branches: [windows]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt pytest
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Check hidden launcher error path
+        shell: pwsh
+        run: |
+          Remove-Item codekey.log -ErrorAction SilentlyContinue
+          $PSNativeCommandUseErrorActionPreference = $false
+          $output = & cscript.exe //nologo launch_windows.vbs 2>&1
+          $exitCode = $LASTEXITCODE
+          if ($output) { throw "Hidden launcher wrote to the console: $output" }
+          if ($exitCode -ne 1) { throw "Expected missing-setup exit code 1, got $exitCode" }
+          if (-not (Select-String -Path codekey.log -Pattern 'CodeKey setup is missing' -Quiet)) {
+            throw 'Hidden launcher did not record the missing setup error.'
+          }
+          Remove-Item codekey.log
+          $batchOutput = & cmd.exe /d /c launch_windows.bat 2>&1
+          $batchExitCode = $LASTEXITCODE
+          if ($batchOutput) { throw "Batch fallback wrote to the console: $batchOutput" }
+          if ($batchExitCode -ne 1) { throw "Expected batch missing-setup exit code 1, got $batchExitCode" }
+          if (-not (Select-String -Path codekey.log -Pattern 'CodeKey setup is missing' -Quiet)) {
+            throw 'Batch fallback did not record the missing setup error.'
+          }
+          exit 0

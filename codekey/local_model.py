@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 import sys
+import os
 from pathlib import Path
 
 from codekey.config import ModelConfig
@@ -23,6 +24,14 @@ class LocalModelClient:
             bundled = sorted((project_dir / "vendor").glob("llama-*/llama-cli"), reverse=True)
             if bundled:
                 return [str(bundled[0])]
+        if self.config.binary == "llama-cli" and sys.platform == "win32":
+            links = [
+                Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "WinGet" / "Links" / "llama-cli.exe",
+                Path(os.environ.get("ProgramFiles", "")) / "WinGet" / "Links" / "llama-cli.exe",
+            ]
+            for link in links:
+                if link.is_file():
+                    return [str(link)]
         fallback = shutil.which("llama") if self.config.binary == "llama-cli" else None
         if fallback:
             return [fallback, "cli"]
@@ -47,6 +56,7 @@ class LocalModelClient:
             "--no-display-prompt", "--no-show-timings", "--color", "off",
         ]
         try:
+            options = {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
             result = subprocess.run(
                 command,
                 capture_output=True,
@@ -55,6 +65,7 @@ class LocalModelClient:
                 errors="replace",
                 timeout=self.config.timeout,
                 check=False,
+                **options,
             )
         except subprocess.TimeoutExpired as error:
             raise ModelError("The local model timed out. Try a smaller GGUF model.") from error

@@ -58,5 +58,5 @@ def type_into_focused_application(
         return True
     except Exception as error:
         raise CodeKeyError(
-            "Could not type the answer. Check Accessibility permission and keep the target app focused."
+            "Could not type the answer. Keep the target app focused and check input permissions."
         ) from error
