@@ -122,31 +122,50 @@ def _recognize_image(image_path: Path, max_chars: int, diagnostics: bool = False
     return text
 
 
-def read_screen_text(max_chars: int, diagnostics: bool = False) -> str:
+def recognize_image_text(image_path: str | Path, max_chars: int, diagnostics: bool = False) -> str:
+    """OCR an existing image locally with macOS Vision."""
+    path = Path(image_path)
+    if not path.is_file() or path.stat().st_size == 0:
+        raise CodeKeyError("The captured screen image is missing or empty.")
+    return _recognize_image(path, max_chars, diagnostics)
+
+
+def _require_screen_capture_access() -> None:
     if sys.platform != "darwin":
         raise CodeKeyError("Screen question capture currently requires macOS.")
-    try:
-        from Quartz import CGPreflightScreenCaptureAccess, CGRequestScreenCaptureAccess
+    from Quartz import CGPreflightScreenCaptureAccess, CGRequestScreenCaptureAccess
 
-        if not CGPreflightScreenCaptureAccess() and not CGRequestScreenCaptureAccess():
-            raise CodeKeyError(
-                "Screen Recording permission is required. Enable CodeKey Launcher "
-                "(or Terminal, if launched there) in System Settings > Privacy & Security "
-                "> Screen & System Audio Recording, then restart CodeKey."
-            )
-        with tempfile.TemporaryDirectory(prefix="codekey-screen-") as directory:
-            image_path = Path(directory) / "screen.png"
-            result = subprocess.run(
-                ["/usr/sbin/screencapture", "-x", "-D", "1", str(image_path)],
-                capture_output=True, timeout=15,
-            )
-            if result.returncode != 0 or not image_path.is_file() or image_path.stat().st_size == 0:
-                raise CodeKeyError("Screen capture failed. Check Screen Recording permission and restart CodeKey.")
-            return _recognize_image(image_path, max_chars, diagnostics)
+    if not CGPreflightScreenCaptureAccess() and not CGRequestScreenCaptureAccess():
+        raise CodeKeyError(
+            "Screen Recording permission is required. Enable CodeKey Launcher "
+            "(or Terminal, if launched there) in System Settings > Privacy & Security "
+            "> Screen & System Audio Recording, then restart CodeKey."
+        )
+
+
+def capture_screen_image(destination: str | Path) -> Path:
+    """Capture the primary display to a caller-owned local PNG."""
+    _require_screen_capture_access()
+    image_path = Path(destination)
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        result = subprocess.run(
+            ["/usr/sbin/screencapture", "-x", "-D", "1", str(image_path)],
+            capture_output=True, timeout=15,
+        )
+        if result.returncode != 0 or not image_path.is_file() or image_path.stat().st_size == 0:
+            raise CodeKeyError("Screen capture failed. Check Screen Recording permission and restart CodeKey.")
+        return image_path
     except CodeKeyError:
         raise
     except Exception as error:
-        raise CodeKeyError("Could not read the screen image.") from error
+        raise CodeKeyError("Could not capture the screen image.") from error
+
+
+def read_screen_text(max_chars: int, diagnostics: bool = False) -> str:
+    with tempfile.TemporaryDirectory(prefix="codekey-screen-") as directory:
+        image_path = capture_screen_image(Path(directory) / "screen.png")
+        return recognize_image_text(image_path, max_chars, diagnostics)
 
 
 def read_clipboard_image_text(max_chars: int) -> str | None:

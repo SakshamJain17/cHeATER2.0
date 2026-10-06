@@ -209,6 +209,24 @@ def test_screen_capture_is_sent_to_solver(monkeypatch):
     assert seen == ["What is visible?\nA. One\nB. Two"]
 
 
+def test_queued_screen_captures_are_sent_to_solver(monkeypatch):
+    app = CodeKeyApp(load_config("config.yaml"), logging.getLogger("test-codekey"))
+    seen = []
+    monkeypatch.setattr(
+        app.screen_captures,
+        "read_combined_text",
+        lambda limit: "[Screen capture 1]\nproblem\n\n[Screen capture 2]\ncode",
+    )
+    app.solver.solve = lambda question: seen.append(question) or SimpleNamespace(
+        code="answer", classification=SimpleNamespace(task_type=TaskType.GENERAL)
+    )
+    try:
+        app.solve_screen_captures()
+        assert seen == ["[Screen capture 1]\nproblem\n\n[Screen capture 2]\ncode"]
+    finally:
+        app.screen_captures.close()
+
+
 def test_copied_html_escaped_mcq_moves_cursor_without_typing(monkeypatch):
     app = CodeKeyApp(load_config("config.yaml"), logging.getLogger("test-codekey"))
     app.clipboard.read_text = lambda: (

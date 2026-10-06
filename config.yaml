@@ -7,6 +7,9 @@ model:
 
 hotkey:
   screen: "<ctrl>+<shift>+i"
+  capture_screen: "<ctrl>+<shift>+a"
+  process_captures: "<ctrl>+<shift>+p"
+  clear_captures: "<ctrl>+<shift>+d"
   solve: "<alt>+/"
   type_answer: "<ctrl>+<shift>+t"
   cancel: "<ctrl>+<shift>+x"
@@ -21,6 +24,7 @@ generation:
   output_mode: code_only
 
 app:
-  typing_interval_seconds: 0.02
+  typing_interval_seconds: 0.08
   cooldown_seconds: 1.5
+  max_screen_captures: 5
   debug: false

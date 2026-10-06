@@ -6,6 +6,7 @@ import threading
 from pathlib import Path
 
 from codekey.clipboard import Clipboard
+from codekey.capture_queue import ScreenCaptureQueue
 from codekey.config import Config, load_config
 from codekey.exceptions import ClipboardError, CodeKeyError
 from codekey.hotkeys import HotkeyRunner
@@ -56,6 +57,7 @@ class CodeKeyApp:
         self._typing = False
         self._start_when_ready = False
         self._pending_result = None
+        self.screen_captures = ScreenCaptureQueue(config.app.max_screen_captures)
 
     def solve_clipboard(self) -> None:
         self._solve(self._read_clipboard_question)
@@ -82,6 +84,29 @@ class CodeKeyApp:
 
     def solve_screen(self) -> None:
         self._solve(lambda: read_screen_text(self.config.limits.max_input_chars))
+
+    def capture_screen(self) -> None:
+        try:
+            _, count = self.screen_captures.capture()
+            self.logger.info(
+                "Captured screen %d/%d locally. Press %s to process the queue.",
+                count,
+                self.config.app.max_screen_captures,
+                self.config.hotkey.process_captures,
+            )
+        except CodeKeyError as error:
+            self.logger.error("%s", error)
+
+    def solve_screen_captures(self) -> None:
+        self._solve(
+            lambda: self.screen_captures.read_combined_text(
+                self.config.limits.max_input_chars
+            )
+        )
+
+    def clear_screen_captures(self) -> None:
+        removed = self.screen_captures.clear()
+        self.logger.info("Cleared %d queued screen capture%s.", removed, "" if removed == 1 else "s")
 
     def _solve(self, read_question) -> None:
         with self._state_lock:
@@ -263,8 +288,17 @@ def main(argv: list[str] | None = None) -> int:
             app.request_typing,
             app.cancel_current,
             logger,
+            capture_screen_callback=app.capture_screen,
+            process_captures_callback=app.solve_screen_captures,
+            clear_captures_callback=app.clear_screen_captures,
+            capture_screen_hotkey=config.hotkey.capture_screen,
+            process_captures_hotkey=config.hotkey.process_captures,
+            clear_captures_hotkey=config.hotkey.clear_captures,
         )
-        runner.run()
+        try:
+            runner.run()
+        finally:
+            app.screen_captures.close()
     except CodeKeyError as error:
         logging.getLogger("codekey").error("%s", error)
         return 1

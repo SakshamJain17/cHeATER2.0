@@ -33,3 +33,19 @@ def test_rejects_invalid_typing_interval(tmp_path):
     path.write_text('app:\n  typing_interval_seconds: -1\n', encoding="utf-8")
     with pytest.raises(ConfigurationError, match="Typing interval"):
         load_config(path)
+
+
+def test_loads_screen_queue_defaults(tmp_path):
+    path = tmp_path / "config.yaml"
+    path.write_text("model:\n  path: model.gguf\n", encoding="utf-8")
+    config = load_config(path)
+    assert config.app.max_screen_captures == 5
+    assert config.hotkey.capture_screen == "<ctrl>+<shift>+a"
+    assert config.hotkey.process_captures == "<ctrl>+<shift>+p"
+
+
+def test_rejects_excessive_screen_queue(tmp_path):
+    path = tmp_path / "config.yaml"
+    path.write_text("app:\n  max_screen_captures: 21\n", encoding="utf-8")
+    with pytest.raises(ConfigurationError, match="max_screen_captures"):
+        load_config(path)

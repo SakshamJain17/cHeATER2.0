@@ -18,6 +18,9 @@ class ModelConfig:
 @dataclass(frozen=True)
 class HotkeyConfig:
     screen: str
+    capture_screen: str
+    process_captures: str
+    clear_captures: str
     solve: str
     type_answer: str
     cancel: str
@@ -40,6 +43,7 @@ class GenerationConfig:
 class AppConfig:
     typing_interval_seconds: float
     cooldown_seconds: float
+    max_screen_captures: int
     debug: bool
 
 
@@ -99,6 +103,9 @@ def load_config(path: str | Path) -> Config:
             ),
             hotkey=HotkeyConfig(
                 screen=str(hotkey.get("screen", "<ctrl>+<shift>+s")),
+                capture_screen=str(hotkey.get("capture_screen", "<ctrl>+<shift>+a")),
+                process_captures=str(hotkey.get("process_captures", "<ctrl>+<shift>+p")),
+                clear_captures=str(hotkey.get("clear_captures", "<ctrl>+<shift>+d")),
                 solve=str(hotkey.get("solve", "<alt>+<shift>+p")),
                 type_answer=str(hotkey.get("type_answer", "<ctrl>+<shift>+t")),
                 cancel=str(hotkey.get("cancel", "<ctrl>+<shift>+x")),
@@ -115,6 +122,7 @@ def load_config(path: str | Path) -> Config:
             app=AppConfig(
                 typing_interval_seconds=float(app.get("typing_interval_seconds", 0.02)),
                 cooldown_seconds=float(app.get("cooldown_seconds", 1.5)),
+                max_screen_captures=int(app.get("max_screen_captures", 5)),
                 debug=_boolean(app.get("debug", False), "app.debug"),
             ),
         )
@@ -133,9 +141,16 @@ def load_config(path: str | Path) -> Config:
         raise ConfigurationError("output_mode must be code_only or code_and_explanation.")
     if config.app.cooldown_seconds < 0:
         raise ConfigurationError("Cooldown must not be negative.")
+    if not 1 <= config.app.max_screen_captures <= 20:
+        raise ConfigurationError("max_screen_captures must be between 1 and 20.")
     if not 0 <= config.app.typing_interval_seconds <= 1:
         raise ConfigurationError("Typing interval must be between 0 and 1 second.")
-    shortcuts = (config.hotkey.screen, config.hotkey.solve, config.hotkey.type_answer, config.hotkey.cancel, config.hotkey.stop)
+    shortcuts = (
+        config.hotkey.screen, config.hotkey.capture_screen,
+        config.hotkey.process_captures, config.hotkey.clear_captures,
+        config.hotkey.solve, config.hotkey.type_answer,
+        config.hotkey.cancel, config.hotkey.stop,
+    )
     if not all(shortcut.strip() for shortcut in shortcuts):
         raise ConfigurationError("Hotkeys must not be empty.")
     if len(set(shortcuts)) != len(shortcuts):

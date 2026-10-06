@@ -21,6 +21,12 @@ class HotkeyRunner:
         type_callback: Callable[[], None],
         cancel_callback: Callable[[], None],
         logger: logging.Logger,
+        capture_screen_callback: Callable[[], None] | None = None,
+        process_captures_callback: Callable[[], None] | None = None,
+        clear_captures_callback: Callable[[], None] | None = None,
+        capture_screen_hotkey: str | None = None,
+        process_captures_hotkey: str | None = None,
+        clear_captures_hotkey: str | None = None,
     ):
         self.solve_hotkey = solve_hotkey
         self.screen_hotkey = screen_hotkey
@@ -33,6 +39,12 @@ class HotkeyRunner:
         self.type_callback = type_callback
         self.cancel_callback = cancel_callback
         self.logger = logger
+        self.capture_screen_callback = capture_screen_callback
+        self.process_captures_callback = process_captures_callback
+        self.clear_captures_callback = clear_captures_callback
+        self.capture_screen_hotkey = capture_screen_hotkey
+        self.process_captures_hotkey = process_captures_hotkey
+        self.clear_captures_hotkey = clear_captures_hotkey
         self._worker_lock = threading.Lock()
         self._last_trigger = float("-inf")
         self._trigger_lock = threading.Lock()
@@ -79,6 +91,13 @@ class HotkeyRunner:
             self.type_hotkey, self.cancel_hotkey, self.stop_hotkey,
         )
         if sys.platform == "darwin":
+            if self.capture_screen_hotkey and self.process_captures_hotkey:
+                self.logger.info(
+                    "Screen queue: capture %s; process %s; clear %s.",
+                    self.capture_screen_hotkey,
+                    self.process_captures_hotkey,
+                    self.clear_captures_hotkey,
+                )
             self.logger.info("macOS may require Input Monitoring permission for the global hotkey.")
         if sys.platform == "darwin" and self.solve_hotkey == "<alt>+/":
             from Quartz import (
@@ -138,6 +157,12 @@ class HotkeyRunner:
         }
         if sys.platform == "darwin":
             hotkeys[self.screen_hotkey] = lambda: self.trigger(self.screen_callback)
+            if self.capture_screen_callback and self.capture_screen_hotkey:
+                hotkeys[self.capture_screen_hotkey] = lambda: self.trigger(self.capture_screen_callback)
+            if self.process_captures_callback and self.process_captures_hotkey:
+                hotkeys[self.process_captures_hotkey] = lambda: self.trigger(self.process_captures_callback)
+            if self.clear_captures_callback and self.clear_captures_hotkey:
+                hotkeys[self.clear_captures_hotkey] = lambda: self.trigger(self.clear_captures_callback)
         with listener_type(hotkeys, **listener_options) as listener:
             listener.join()
         if not self._stop_requested.is_set():
